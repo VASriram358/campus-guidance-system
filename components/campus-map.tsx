@@ -21,6 +21,7 @@ declare global {
         DirectionsRenderer: any
         TravelMode: {
           WALKING: string
+          DRIVING: string
         }
       }
     }
@@ -245,7 +246,7 @@ export default function CampusMap() {
         mapInstanceRef.current?.panTo(pos)
       }
 
-      // Check if user is within campus bounds
+      // We no longer show an error if outside campus bounds so routing works anywhere.
       const isOnCampus =
         pos.lat >= campusBounds.south &&
         pos.lat <= campusBounds.north &&
@@ -253,7 +254,7 @@ export default function CampusMap() {
         pos.lng <= campusBounds.east
 
       if (!isOnCampus) {
-        setLocationError("You appear to be outside the campus area")
+        console.log("User is currently outside the campus area.")
       }
     }
 
@@ -333,17 +334,34 @@ export default function CampusMap() {
 
     const directionsService = new window.google.maps.DirectionsService()
 
+    const isOutsideCampus = (pos: Position) => {
+      return !(
+        pos.lat >= campusBounds.south &&
+        pos.lat <= campusBounds.north &&
+        pos.lng >= campusBounds.west &&
+        pos.lng <= campusBounds.east
+      )
+    }
+
+    const mode = isOutsideCampus(originPos) || isOutsideCampus(destPos)
+      ? window.google.maps.TravelMode.DRIVING
+      : window.google.maps.TravelMode.WALKING
+
     directionsService.route(
       {
         origin: originPos,
         destination: destPos,
-        travelMode: window.google.maps.TravelMode.WALKING,
+        travelMode: mode,
       },
       (response: any, status: string) => {
         if (status === "OK") {
           directionsRendererRef.current.setDirections(response)
         } else {
-          setRouteError(`Directions request failed due to ${status}`)
+          if (status === "ZERO_RESULTS") {
+            setRouteError("No route could be found between these locations.")
+          } else {
+            setRouteError(`Directions request failed due to ${status}`)
+          }
         }
       }
     )
