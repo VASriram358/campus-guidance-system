@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { MapPin, Navigation, AlertCircle, Plus, Minus } from "lucide-react"
+import { MapPin, Navigation, AlertCircle, Plus, Minus, Route as RouteIcon, X } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 declare global {
   interface Window {
@@ -16,6 +17,11 @@ declare global {
         MapTypeId: {
           HYBRID: string
         }
+        DirectionsService: any
+        DirectionsRenderer: any
+        TravelMode: {
+          WALKING: string
+        }
       }
     }
     initGoogleMaps: () => void
@@ -27,16 +33,54 @@ interface Position {
   lng: number
 }
 
+const landmarks = [
+  { id: "admin_a", position: { lat: 13.009652, lng: 80.004301 }, title: "Main Administrative Block(A)"},
+  { id: "aircraft_canteen", position: { lat: 13.009463, lng: 80.003151 }, title: "Aircraft and Canteen" },
+  { id: "hut_cafe", position: { lat: 13.008008936724767, lng: 80.00341333955035}, title: "Hut Cafe(enterance)" },
+  { id: "aero_mech", position: { lat: 13.007902905627468, lng: 80.00283538203252 }, title: "Aero. & Mech. Block" },
+  { id: "ece_block", position: { lat: 13.009067, lng:  80.003302 }, title: "Electronics & Communication Block" },
+  { id: "mech_workshop", position: { lat: 13.008021591268783, lng:  80.00312107937762 }, title: "Mechanical Workshop" },
+  { id: "auditorium", position: { lat: 13.008377622618857, lng: 80.00563820570768 }, title: "Auditorium" },
+  { id: "squash_court", position: { lat: 13.007976, lng:  80.004343 }, title: "Squach & Pickleball sports court" },
+  { id: "new_boys_hostel", position: { lat: 13.007390682447499, lng:   80.00349520544162 }, title: "New boys hostel" },
+  { id: "old_girls_hostel", position: { lat: 13.007486, lng:   80.005511}, title: "Old girls hostel" },
+  { id: "girls_hostel", position: { lat: 13.007296630190817, lng:   80.00516885607544}, title: "Girls Hostel" },
+  { id: "old_boys_hostel", position: { lat: 13.007327990835968, lng:   80.00440174430713}, title: "Old boys hostel" },
+  { id: "library", position: { lat: 13.008937, lng:   80.005640}, title: "Library block" },
+  { id: "tech_lounge", position: { lat: 13.009570798956707, lng:   80.00509358162904}, title: "Techlounge Block" },
+  { id: "transport_office", position: { lat: 13.009319406379863, lng:   80.00562972822823}, title: "REC transport office" },
+  { id: "rec_cafe", position: { lat: 13.008482, lng:   80.002515}, title: "REC cafe canteen" },
+  { id: "idea_factory", position: { lat: 13.008650, lng:   80.001993}, title: "Idea factory block" },
+  { id: "courtyard", position: { lat: 13.008474, lng:   80.002330}, title: "Courtyard canteen" },
+  { id: "academic_block", position: { lat: 13.008156781431756, lng:   80.00239293912178}, title: "Academic block" },
+  { id: "hekaa_canteen", position: { lat: 13.007739, lng:   80.002108}, title: "Hekaa canteen" },
+  { id: "civil_labs", position: { lat: 13.008019233850431, lng:   80.00124394383324}, title: "Civil labs & workshop " },
+  { id: "playground", position: { lat: 13.008523286387378, lng:   80.00474627861848}, title: "Play ground(foot ball & cricket)" },
+  { id: "aero_chem_labs", position: { lat: 13.00801031587465, lng:   80.001832776622}, title: "Aero.& Chem. labs & workshop " },
+  { id: "badminton_court", position: { lat: 13.007956, lng:   80.004118}, title: "Ball badmintion & Vollyball ground" },
+  { id: "basketball_court", position: { lat: 13.008957, lng:   80.004112}, title: "Through ball & Basket ball ground" },
+  { id: "handball_court", position: { lat: 13.008495, lng:   80.004284}, title: "Hand ball ground" },
+  { id: "football_turf", position: { lat: 13.009056, lng:   80.004352}, title: "Foot ball turf" },
+  { id: "main_gate", position: { lat: 13.01074558428208, lng:   80.00232998951167}, title: "REC main enterance gate" },
+  { id: "parking", position: { lat: 13.012314, lng:   80.000442}, title: "REC main road enterance & vechile parking" },
+  { id: "boys_canteen", position: { lat: 13.007285483496112, lng:   80.0038105688513}, title: "Boys hostelar canteen" },
+]
+
 export default function CampusMap() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any | null>(null)
   const userMarkerRef = useRef<any | null>(null)
+  const directionsRendererRef = useRef<any | null>(null)
   const watchIdRef = useRef<number | null>(null)
 
   const [isLoaded, setIsLoaded] = useState(false)
   const [userPosition, setUserPosition] = useState<Position | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [routeError, setRouteError] = useState<string | null>(null)
   const [isTracking, setIsTracking] = useState(false)
+
+  const [originId, setOriginId] = useState<string>("current")
+  const [destinationId, setDestinationId] = useState<string>("")
 
   const campusCenter = { lat: 13.008963750996669, lng: 80.00365067320756 }
 
@@ -102,6 +146,17 @@ export default function CampusMap() {
 
     mapInstanceRef.current = map
 
+    // Initialize Directions Renderer
+    directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
+      map: map,
+      suppressMarkers: true, // We have our own custom markers
+      polylineOptions: {
+        strokeColor: "#4285F4",
+        strokeOpacity: 0.8,
+        strokeWeight: 6,
+      }
+    })
+
     // Add campus boundary (optional)
     const campusRectangle = new window.google.maps.Rectangle({
       bounds: campusBounds,
@@ -112,39 +167,6 @@ export default function CampusMap() {
       strokeWeight: 2,
       map: map,
     })
-
-    const landmarks = [
-      { position: { lat: 13.009652, lng: 80.004301 }, title: "Main Administrative Block(A)"},
-      { position: { lat: 13.009463, lng: 80.003151 }, title: "Aircraft and Canteen" },
-      { position: { lat: 13.008008936724767, lng: 80.00341333955035}, title: "Hut Cafe(enterance)" },
-      { position: { lat: 13.007902905627468, lng: 80.00283538203252 }, title: "Aero. & Mech. Block" },
-      { position: { lat: 13.009067, lng:  80.003302 }, title: "Electronics & Communication Block" },
-      { position: { lat: 13.008021591268783, lng:  80.00312107937762 }, title: "Mechanical Workshop" },
-      { position: { lat: 13.008377622618857, lng: 80.00563820570768 }, title: "Auditorium" },
-      { position: { lat: 13.007976, lng:  80.004343 }, title: "Squach & Pickleball sports court" },
-      { position: { lat: 13.007390682447499, lng:   80.00349520544162 }, title: "New boys hostel" },
-      { position: { lat: 13.007486, lng:   80.005511}, title: "Old girls hostel" },
-      { position: { lat: 13.007296630190817, lng:   80.00516885607544}, title: "Girls Hostel" },
-      { position: { lat: 13.007327990835968, lng:   80.00440174430713}, title: "Old boys hostel" },
-      { position: { lat: 13.008937, lng:   80.005640}, title: "Library block" },
-      { position: { lat: 13.009570798956707, lng:   80.00509358162904}, title: "Techlounge Block" },
-      { position: { lat: 13.009319406379863, lng:   80.00562972822823}, title: "REC transport office" },
-      { position: { lat: 13.008482, lng:   80.002515}, title: "REC cafe canteen" },
-      { position: { lat: 13.008650, lng:   80.001993}, title: "Idea factory block" },
-      { position: { lat: 13.008474, lng:   80.002330}, title: "Courtyard canteen" },
-      { position: { lat: 13.008156781431756, lng:   80.00239293912178}, title: "Academic block" },
-      { position: { lat: 13.007739, lng:   80.002108}, title: "Hekaa canteen" },
-      { position: { lat: 13.008019233850431, lng:   80.00124394383324}, title: "Civil labs & workshop " },
-      { position: { lat: 13.008523286387378, lng:   80.00474627861848}, title: "Play ground(foot ball & cricket)" },
-      { position: { lat: 13.00801031587465, lng:   80.001832776622}, title: "Aero.& Chem. labs & workshop " },
-      { position: { lat: 13.007956, lng:   80.004118}, title: "Ball badmintion & Vollyball ground" },
-      { position: { lat: 13.008957, lng:   80.004112}, title: "Through ball & Basket ball ground" },
-      { position: { lat: 13.008495, lng:   80.004284}, title: "Hand ball ground" },
-      { position: { lat: 13.009056, lng:   80.004352}, title: "Foot ball turf" },
-      { position: { lat: 13.01074558428208, lng:   80.00232998951167}, title: "REC main enterance gate" },
-      { position: { lat: 13.012314, lng:   80.000442}, title: "REC main road enterance & vechile parking" },
-      { position: { lat: 13.007285483496112, lng:   80.0038105688513}, title: "Boys hostelar canteen" },
-    ]
 
     landmarks.forEach((landmark) => {
       new window.google.maps.Marker({
@@ -191,9 +213,6 @@ export default function CampusMap() {
         zIndex: 1000,
       })
     }
-
-    // Center map on user location
-    mapInstanceRef.current.panTo(position)
   }
 
   // Start location tracking
@@ -220,6 +239,11 @@ export default function CampusMap() {
 
       setUserPosition(pos)
       updateUserMarker(pos)
+
+      // Only center if we haven't loaded a route, to avoid overriding route bounds
+      if (!directionsRendererRef.current?.getDirections()) {
+        mapInstanceRef.current?.panTo(pos)
+      }
 
       // Check if user is within campus bounds
       const isOnCampus =
@@ -265,6 +289,80 @@ export default function CampusMap() {
       watchIdRef.current = null
     }
     setIsTracking(false)
+  }
+
+  // Calculate Route
+  const calculateRoute = () => {
+    if (!window.google || !isLoaded) return
+    setRouteError(null)
+
+    let originPos: Position | null = null
+    let destPos: Position | null = null
+
+    if (originId === "current") {
+      if (!userPosition) {
+        setRouteError("Current location is unavailable. Enable location first.")
+        return
+      }
+      originPos = userPosition
+    } else {
+      const lm = landmarks.find(l => l.id === originId)
+      if (lm) originPos = lm.position
+    }
+
+    if (destinationId === "current") {
+       if (!userPosition) {
+        setRouteError("Current location is unavailable. Enable location first.")
+        return
+      }
+      destPos = userPosition
+    } else {
+       const lm = landmarks.find(l => l.id === destinationId)
+       if (lm) destPos = lm.position
+    }
+
+    if (!originPos || !destPos) {
+      setRouteError("Please select both origin and destination.")
+      return
+    }
+
+    if (originPos.lat === destPos.lat && originPos.lng === destPos.lng) {
+      setRouteError("Origin and destination cannot be the same.")
+      return
+    }
+
+    const directionsService = new window.google.maps.DirectionsService()
+
+    directionsService.route(
+      {
+        origin: originPos,
+        destination: destPos,
+        travelMode: window.google.maps.TravelMode.WALKING,
+      },
+      (response: any, status: string) => {
+        if (status === "OK") {
+          directionsRendererRef.current.setDirections(response)
+        } else {
+          setRouteError(`Directions request failed due to ${status}`)
+        }
+      }
+    )
+  }
+
+  const clearRoute = () => {
+    if (directionsRendererRef.current) {
+      directionsRendererRef.current.setDirections({ routes: [] })
+    }
+    setOriginId("current")
+    setDestinationId("")
+    setRouteError(null)
+    if (userPosition) {
+       mapInstanceRef.current?.panTo(userPosition)
+       mapInstanceRef.current?.setZoom(17)
+    } else {
+       mapInstanceRef.current?.panTo(campusCenter)
+       mapInstanceRef.current?.setZoom(16)
+    }
   }
 
   // Zoom control functions
@@ -341,7 +439,56 @@ export default function CampusMap() {
         </div>
       </div>
 
-      {isTracking && userPosition && (
+      <Card className="p-4 flex flex-col md:flex-row items-end gap-4 bg-muted/50 border-primary/20">
+        <div className="grid gap-2 w-full">
+           <label className="text-sm font-medium leading-none">From</label>
+           <Select value={originId} onValueChange={setOriginId}>
+             <SelectTrigger className="w-full bg-background">
+               <SelectValue placeholder="Select starting location" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="current" className="font-semibold text-primary">Your Current Location</SelectItem>
+               {landmarks.map((lm) => (
+                 <SelectItem key={lm.id} value={lm.id}>{lm.title}</SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+        </div>
+        <div className="grid gap-2 w-full">
+           <label className="text-sm font-medium leading-none">To</label>
+           <Select value={destinationId} onValueChange={setDestinationId}>
+             <SelectTrigger className="w-full bg-background">
+               <SelectValue placeholder="Select destination" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="current" className="font-semibold text-primary">Your Current Location</SelectItem>
+               {landmarks.map((lm) => (
+                 <SelectItem key={lm.id} value={lm.id}>{lm.title}</SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={calculateRoute} className="flex gap-2 min-w-[120px]" disabled={!originId || !destinationId}>
+            <RouteIcon className="h-4 w-4" />
+            Find Path
+          </Button>
+          <Button onClick={clearRoute} variant="outline" size="icon" title="Clear Route">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </Card>
+
+      {(locationError || routeError) && (
+        <Card className="p-4 border-destructive bg-destructive/5">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">{locationError || routeError}</span>
+          </div>
+        </Card>
+      )}
+
+      {isTracking && userPosition && !routeError && !locationError && (
         <Card className="p-4 border-green-500 bg-green-50 dark:bg-green-950/20">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
             <Navigation className="h-4 w-4" />
@@ -352,15 +499,6 @@ export default function CampusMap() {
                 Longitude: {userPosition.lng.toFixed(8)}°
               </div>
             </div>
-          </div>
-        </Card>
-      )}
-
-      {locationError && (
-        <Card className="p-4 border-destructive bg-destructive/5">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{locationError}</span>
           </div>
         </Card>
       )}
@@ -381,12 +519,12 @@ export default function CampusMap() {
       <Card className="p-4">
         <h3 className="font-semibold mb-2">Instructions:</h3>
         <ul className="text-sm text-muted-foreground space-y-1">
-          <li>• Click "Enable Location" to start GPS tracking</li>
-          <li>• Allow location access when prompted by your browser</li>
-          <li>• Your live location will appear as a blue dot on the map</li>
-          <li>• Red markers show important campus buildings</li>
-          <li>• Use "Zoom In" and "Zoom Out" buttons to adjust map detail level</li>
-          <li>• Works best when you're physically on campus</li>
+          <li>• Select "From" and "To" locations using the dropdown menus above the map.</li>
+          <li>• Click "Find Path" to display the shortest walking route.</li>
+          <li>• Click "Enable Location" to allow using "Your Current Location" for routing.</li>
+          <li>• Allow location access when prompted by your browser.</li>
+          <li>• Red markers show important campus buildings.</li>
+          <li>• Use "Zoom In" and "Zoom Out" buttons to adjust map detail level.</li>
         </ul>
       </Card>
     </div>
