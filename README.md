@@ -122,7 +122,7 @@ Developed as part of an academic project on Smart Campus Systems.
 
 ## Output
 <img width="717" height="395" alt="image" src="https://github.com/user-attachments/assets/47dbe98c-b2df-4035-a9af-0542db79770a" />
-<img width="717" height="437" alt="image" src="https://github.com/user-attachments/assets/1d07bfee-d6f5-40e9-8b6b-fe1543cfc570" />
+<img width="717" height="350" alt="image" src="https://github.com/user-attachments/assets/75ce2818-bab9-489c-a764-dc0a09ec7c1f" />
 <img width="779" height="760" alt="image" src="https://github.com/user-attachments/assets/88d4344e-02d8-4af1-bee7-f15bda7f6555" />
 
 
