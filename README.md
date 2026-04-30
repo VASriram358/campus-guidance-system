@@ -2,9 +2,19 @@
 
 ## 📌 Overview
 
-The **Smart Campus Guidance System** is a web-based application designed to help students, staff, and visitors easily navigate a college campus. It provides an interactive digital map with location-based guidance to improve accessibility and user experience within the campus.
+The **Smart Campus Guidance System** is a web-based application designed to help users easily navigate large and complex environments using an interactive digital map with location-based guidance.
 
-This project is part of a larger **Smart Campus Surveillance and Guidance System**, aimed at enhancing campus safety and navigation using modern web technologies.
+Although initially developed for a college campus, this system is **highly adaptable and can be used in any organization or large facility**, such as:
+
+* 🏢 Corporate offices
+* 🏥 Hospitals
+* 🏭 Industrial campuses
+* 🏫 Schools and universities
+* 🛍️ Shopping malls
+* 🐾 Zoos and wildlife parks
+etc.
+
+This project is part of a larger **Smart Campus Surveillance and Guidance System**, aimed at enhancing safety, navigation, and operational efficiency using modern web technologies.
 
 ---
 
@@ -80,9 +90,13 @@ http://localhost:3000
 
 ## 🌍 Use Cases
 
-* Helps new students locate classrooms and departments
-* Assists visitors in navigating campus easily
-* Can be extended for emergency and safety guidance
+* 🎓 Educational institutions (colleges, schools, universities)
+* 🏢 Corporate campuses and IT parks
+* 🏥 Hospitals and healthcare facilities
+* 🏭 Industrial and manufacturing sites
+* 🛍️ Large public spaces like malls and exhibitions
+
+This system can be customized for any organization that requires **efficient navigation, location tracking, and user guidance** within large premises.
 
 ---
 
@@ -98,13 +112,17 @@ http://localhost:3000
 
 This project was presented at an international conference (**ICTIS 2026**).
 Currently, no open-source license has been specified.
+
 ---
 
 ## 👨‍💻 Author
 
 Developed as part of an academic project on Smart Campus Systems.
 
+
 ## Output
-<img width="779" height="856" alt="image" src="https://github.com/user-attachments/assets/052f86c0-f899-4fd6-b646-4f9aea2054f7" />
 <img width="717" height="395" alt="image" src="https://github.com/user-attachments/assets/47dbe98c-b2df-4035-a9af-0542db79770a" />
 <img width="717" height="437" alt="image" src="https://github.com/user-attachments/assets/1d07bfee-d6f5-40e9-8b6b-fe1543cfc570" />
+<img width="779" height="760" alt="image" src="https://github.com/user-attachments/assets/88d4344e-02d8-4af1-bee7-f15bda7f6555" />
+
+
